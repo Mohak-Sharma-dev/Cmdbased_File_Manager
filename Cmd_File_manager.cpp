@@ -88,11 +88,12 @@ Add Additional Features:
 */
 
 #include <iostream>
-#include <string>
-#include <vector>
+// #include <string>
+// #include <vector>
 #include <filesystem>
 #include <limits>
 #include <fstream>
+#include <regex>
 
 namespace fs = std::filesystem;
 
@@ -103,6 +104,7 @@ void createDirectory();
 void displayDirectoryContents(const std::string& path, bool recursive = false);
 void copyOrMoveFile(const std::string& path);
 void viewFile(const std::string& path);
+bool isValidPath(const std::string& path);
 
 void displayMainMenu()
 {
@@ -119,7 +121,7 @@ void openDirectory()
     std::cin.ignore(); // Ignore any leftover newline character in the input buffer
     std::getline(std::cin, path);
 
-    if (fs::exists(path) && fs::is_directory(path))
+    if (isValidPath(path) && fs::exists(path) && fs::is_directory(path))
     {
         int choice;
         std::cout << "1. Display files\n";
@@ -192,7 +194,7 @@ void copyOrMoveFile(const std::string& path)
         std::cin.ignore(); // Ignore any leftover newline character in the input buffer
         std::getline(std::cin, filename);
 
-        if (fs::exists(path + "/" + filename))
+        if (isValidPath(filename) && fs::exists(path + "/" + filename))
         {
             std::cout << "Enter 'Copy' or 'Move': ";
             std::cin >> action;
@@ -201,7 +203,7 @@ void copyOrMoveFile(const std::string& path)
             std::cin.ignore(); // Ignore any leftover newline character in the input buffer
             std::getline(std::cin, destPath);
 
-            if (fs::exists(destPath) && fs::is_directory(destPath))
+            if (isValidPath(destPath) && fs::exists(destPath) && fs::is_directory(destPath))
             {
                 std::string destFilePath = destPath + "/" + filename;
                 if (fs::exists(destFilePath))
@@ -258,7 +260,7 @@ void viewFile(const std::string& path)
 
     std::string filePath = path + "/" + filename;
 
-    if (fs::exists(filePath) && fs::is_regular_file(filePath))
+    if (isValidPath(filePath) && fs::exists(filePath) && fs::is_regular_file(filePath))
     {
         std::ifstream file(filePath);
         if (file.is_open())
@@ -288,7 +290,7 @@ void createDirectory()
     std::cin.ignore(); // Ignore any leftover newline character in the input buffer
     std::getline(std::cin, parentDir);
 
-    if (!fs::exists(parentDir) || !fs::is_directory(parentDir))
+    if (!isValidPath(parentDir) || !fs::exists(parentDir) || !fs::is_directory(parentDir))
     {
         std::cerr << "Invalid parent directory. Returning to Main Menu.\n";
         return;
@@ -300,6 +302,12 @@ void createDirectory()
 
     std::string fullPath = parentDir + "/" + dirName;
 
+    if (!isValidPath(fullPath))
+    {
+        std::cerr << "Invalid directory name. Returning to Main Menu.\n";
+        return;
+    }
+
     try
     {
         fs::create_directory(fullPath);
@@ -309,6 +317,13 @@ void createDirectory()
     {
         std::cerr << "Directory creation failed: " << e.what() << '\n';
     }
+}
+
+bool isValidPath(const std::string& path)
+{
+    // Define a regex pattern for valid paths (alphanumeric, underscores, hyphens, and slashes)
+    std::regex pattern("^[a-zA-Z0-9_\\-\\/\\\\]+$");
+    return std::regex_match(path, pattern);
 }
 
 int main()
