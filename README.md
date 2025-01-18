@@ -65,4 +65,4 @@ The `isValidPath()` function validates directory and file paths using a regex pa
 ### **Steps to Run**
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/cmd-file-manager.git
+   git clone https://github.com/Mohak-Sharma-dev/CodeAlpha_Cmdbased_File_Manager.git
