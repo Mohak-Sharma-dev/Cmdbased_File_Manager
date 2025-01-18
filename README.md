@@ -57,11 +57,6 @@ The `isValidPath()` function validates directory and file paths using a regex pa
 
 ---
 
-## **How to Run**
-
-### **Prerequisites**
-- A C++ compiler that supports C++17 or later (e.g., GCC, Clang, or MSVC).
-
 ### **Steps to Run**
 1. Clone the repository:
    ```bash
