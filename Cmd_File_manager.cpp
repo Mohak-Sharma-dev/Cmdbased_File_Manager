@@ -118,6 +118,14 @@ void openDirectory()
     std::cout << "Enter the directory path: ";
     std::cin.ignore(); // Ignore any leftover newline character in the input buffer
     std::getline(std::cin, path);
+    std::cout << "Path entered: " << path << std::endl;
+
+    if (fs::exists(path) && fs::is_directory(path)) {
+    std::cout << "Valid directory path: " << path << std::endl;
+    } else {
+        std::cout << "Invalid path or not a directory.\n";
+    }
+
 
     if (isValidPath(path) && fs::exists(path) && fs::is_directory(path))
     {
@@ -287,6 +295,13 @@ void createDirectory()
     std::cout << "Enter the parent directory path: ";
     std::cin.ignore(); // Ignore any leftover newline character in the input buffer
     std::getline(std::cin, parentDir);
+    std::cout << "Path entered: " << parentDir << std::endl;
+
+    if (fs::exists(parentDir) && fs::is_directory(parentDir)) {
+    std::cout << "Valid directory path: " << parentDir << std::endl;
+    } else {
+        std::cout << "Invalid path or not a directory.\n";
+    }
 
     if (!isValidPath(parentDir) || !fs::exists(parentDir) || !fs::is_directory(parentDir))
     {
@@ -317,12 +332,20 @@ void createDirectory()
     }
 }
 
+// bool isValidPath(const std::string& path)
+// {
+//     // Define a regex pattern for valid paths (alphanumeric, underscores, hyphens, and slashes)
+//     std::regex pattern("^[a-zA-Z0-9_\\-\\/\\\\]+$");
+//     return std::regex_match(path, pattern);
+// }
+
 bool isValidPath(const std::string& path)
 {
-    // Define a regex pattern for valid paths (alphanumeric, underscores, hyphens, and slashes)
-    std::regex pattern("^[a-zA-Z0-9_\\-\\/\\\\]+$");
+    // Regex to validate Windows-style paths
+    std::regex pattern(R"(^[a-zA-Z]:[\\/](?:[^<>:\"|?*]+[\\/])*[^<>:\"|?*]*$)");
     return std::regex_match(path, pattern);
 }
+
 
 int main()
 {
