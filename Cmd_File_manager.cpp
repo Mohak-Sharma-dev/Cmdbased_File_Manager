@@ -91,6 +91,7 @@ Add Additional Features:
 #include <filesystem>
 #include <limits>
 #include <fstream>
+#include <string>
 #include <regex>
 
 namespace fs = std::filesystem;
@@ -264,28 +265,40 @@ void viewFile(const std::string& path)
     std::cin.ignore(); // Ignore any leftover newline character in the input buffer
     std::getline(std::cin, filename);
 
+    // Construct the full file path
     std::string filePath = path + "/" + filename;
 
-    if (isValidPath(filePath) && fs::exists(filePath) && fs::is_regular_file(filePath))
+    // Normalize the path separators (optional, for cross-platform compatibility)
+    std::replace(filePath.begin(), filePath.end(), '\\', '/');
+
+    // Check if the path and file are valid
+    if (isValidPath(filePath))
     {
-        std::ifstream file(filePath);
-        if (file.is_open())
+        if (fs::exists(filePath) && fs::is_regular_file(filePath))
         {
-            std::string line;
-            while (std::getline(file, line))
+            std::ifstream file(filePath);
+            if (file.is_open())
             {
-                std::cout << line << '\n';
+                std::string line;
+                while (std::getline(file, line))
+                {
+                    std::cout << line << '\n';
+                }
+                file.close();
             }
-            file.close();
+            else
+            {
+                std::cerr << "Unable to open file.\n";
+            }
         }
         else
         {
-            std::cerr << "Unable to open file.\n";
+            std::cerr << "Invalid path or the file does not exist.\n";
         }
     }
     else
     {
-        std::cerr << "File does not exist or is not a regular file.\n";
+        std::cerr << "The provided path is not valid.\n";
     }
 }
 
@@ -341,8 +354,8 @@ void createDirectory()
 
 bool isValidPath(const std::string& path)
 {
-    // Regex to validate Windows-style paths
-    std::regex pattern(R"(^[a-zA-Z]:[\\/](?:[^<>:\"|?*]+[\\/])*[^<>:\"|?*]*$)");
+    // Regex to validate both absolute and relative paths
+    std::regex pattern(R"(^([a-zA-Z]:[\\/])?([^<>:\"|?*]+[\\/])*[^<>:\"|?*]*$)");
     return std::regex_match(path, pattern);
 }
 
