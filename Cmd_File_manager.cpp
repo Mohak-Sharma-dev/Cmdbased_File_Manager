@@ -164,29 +164,71 @@ void moveFile(const std::string& sourceDir) {
     }
 }
 
+// void viewFile(const std::string& path) {
+//     std::string filename;
+//     std::cout << "Enter the file name to view: ";
+//     std::cin.ignore();
+//     std::getline(std::cin, filename);
+
+//     std::string filePath = normalizePath(path + "/" + filename);
+//     if (!fs::exists(filePath) || !fs::is_regular_file(filePath)) {
+//         std::cerr << "File does not exist or is not a regular file.\n";
+//         return;
+//     }
+
+//     std::ifstream file(filePath);
+//     if (!file.is_open()) {
+//         std::cerr << "Error opening file.\n";
+//         return;
+//     }
+
+//     std::string line;
+//     while (std::getline(file, line)) {
+//         std::cout << line << '\n';
+//     }
+// }
+
 void viewFile(const std::string& path) {
     std::string filename;
-    std::cout << "Enter the file name to view: ";
+    std::cout << "Enter the file name to view (include extension): ";
     std::cin.ignore();
     std::getline(std::cin, filename);
 
     std::string filePath = normalizePath(path + "/" + filename);
-    if (!fs::exists(filePath) || !fs::is_regular_file(filePath)) {
-        std::cerr << "File does not exist or is not a regular file.\n";
+    if (!fs::exists(filePath)) {
+        std::cerr << "Error: File does not exist. Checked path: " << filePath << '\n';
         return;
     }
 
-    std::ifstream file(filePath);
-    if (!file.is_open()) {
-        std::cerr << "Error opening file.\n";
+    if (!fs::is_regular_file(filePath)) {
+        std::cerr << "Error: Path is not a regular file: " << filePath << '\n';
         return;
     }
 
-    std::string line;
-    while (std::getline(file, line)) {
-        std::cout << line << '\n';
+    // Check for text file extensions (basic heuristic)
+    std::vector<std::string> textFileExtensions = {".txt", ".csv", ".log", ".json"};
+    std::string extension = fs::path(filePath).extension().string();
+    if (std::find(textFileExtensions.begin(), textFileExtensions.end(), extension) != textFileExtensions.end()) {
+        // Handle text file
+        std::ifstream file(filePath);
+        if (!file.is_open()) {
+            std::cerr << "Error: Could not open the file: " << filePath << '\n';
+            return;
+        }
+
+        std::cout << "Contents of " << filePath << ":\n";
+        std::string line;
+        while (std::getline(file, line)) {
+            std::cout << line << '\n';
+        }
+        file.close();
+    } else {
+        // Handle binary file (e.g., images)
+        std::cout << "The file \"" << filename << "\" is a binary file and cannot be displayed as plain text.\n";
+        std::cout << "To view this file, open it with an image viewer.\n";
     }
 }
+
 
 
 
