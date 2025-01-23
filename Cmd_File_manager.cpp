@@ -2,8 +2,6 @@
 #include <filesystem>
 #include <fstream>
 #include <regex>
-#include <string>
-#include <algorithm>
 
 namespace fs = std::filesystem;
 
@@ -18,8 +16,9 @@ bool isValidPath(const std::string& path);
 std::string normalizePath(const std::string& path);
 
 void displayMainMenu() {
-    std::cout << "\n1. Open directory\n"
-              << "2. Create directory\n"
+    std::cout << "\nMain Menu:\n"
+              << "1. Open directory (perform operations like view, move, or copy files)\n"
+              << "2. Create a new directory\n"
               << "3. Exit\n"
               << "Enter your choice: ";
 }
@@ -38,22 +37,23 @@ bool isValidPath(const std::string& path) {
 
 void openDirectory() {
     std::string path;
-    std::cout << "Enter the directory path: ";
+    std::cout << "Enter the full path of the directory to open: ";
     std::cin.ignore();
     std::getline(std::cin, path);
     path = normalizePath(path);
 
     if (!fs::exists(path) || !fs::is_directory(path)) {
-        std::cerr << "Invalid directory path.\n";
+        std::cerr << "Error: Invalid directory path.\n";
         return;
     }
 
     int choice;
-    std::cout << "\n1. Display files\n"
-              << "2. Display files recursively\n"
-              << "3. Copy file\n"
-              << "4. Move file\n"
-              << "5. View file\n"
+    std::cout << "\nDirectory Operations:\n"
+              << "1. Display files in the directory\n"
+              << "2. Display files recursively (including subdirectories)\n"
+              << "3. Copy a file from this directory\n"
+              << "4. Move a file from this directory\n"
+              << "5. View the contents of a text file\n"
               << "6. Return to Main Menu\n"
               << "Enter your choice: ";
     std::cin >> choice;
@@ -65,19 +65,19 @@ void openDirectory() {
         case 4: moveFile(path); break;
         case 5: viewFile(path); break;
         case 6: return;
-        default: std::cerr << "Invalid choice.\n"; break;
+        default: std::cerr << "Invalid choice. Returning to Main Menu.\n"; break;
     }
 }
 
 void createDirectory() {
     std::string path;
-    std::cout << "Enter the directory path to create: ";
+    std::cout << "Enter the full path of the new directory to create: ";
     std::cin.ignore();
     std::getline(std::cin, path);
     path = normalizePath(path);
 
     if (fs::exists(path)) {
-        std::cerr << "Directory already exists.\n";
+        std::cerr << "Error: Directory already exists.\n";
         return;
     }
 
@@ -85,9 +85,9 @@ void createDirectory() {
         if (fs::create_directories(path)) {
             std::cout << "Directory created successfully.\n";
         } else {
-            std::cerr << "Failed to create directory.\n";
+            std::cerr << "Error: Failed to create directory.\n";
         }
-    } catch (const std::filesystem::filesystem_error& e) {
+    } catch (const fs::filesystem_error& e) {
         std::cerr << "Error: " << e.what() << '\n';
     }
 }
@@ -103,94 +103,92 @@ void displayDirectoryContents(const std::string& path, bool recursive) {
                 std::cout << entry.path() << '\n';
             }
         }
-    } catch (const std::filesystem::filesystem_error& e) {
+    } catch (const fs::filesystem_error& e) {
         std::cerr << "Error: " << e.what() << '\n';
     }
 }
 
 void copyFile(const std::string& sourceDir) {
-    std::string filename, destPath;
-    std::cout << "Enter the file name to copy: ";
+    std::string filename, destDir;
+    std::cout << "Enter the name of the file to copy (e.g., example.txt): ";
     std::cin.ignore();
     std::getline(std::cin, filename);
-    std::cout << "Enter the destination directory path: ";
-    std::getline(std::cin, destPath);
+    std::cout << "Enter the full path of the destination directory: ";
+    std::getline(std::cin, destDir);
 
     std::string sourceFilePath = normalizePath(sourceDir + "/" + filename);
-    destPath = normalizePath(destPath + "/" + filename);
+    destDir = normalizePath(destDir);
 
     if (!fs::exists(sourceFilePath) || !fs::is_regular_file(sourceFilePath)) {
-        std::cerr << "Source file does not exist.\n";
-        return;
-    }
-    if (!fs::exists(destPath)) {
-        std::cerr << "Destination path is invalid.\n";
+        std::cerr << "Error: Source file does not exist or is not a regular file. Checked path: " << sourceFilePath << '\n';
         return;
     }
 
+    if (!fs::exists(destDir)) {
+        std::cout << "Destination directory does not exist. Creating it...\n";
+        try {
+            fs::create_directories(destDir);
+            std::cout << "Directory created successfully.\n";
+        } catch (const fs::filesystem_error& e) {
+            std::cerr << "Error creating directory: " << e.what() << '\n';
+            return;
+        }
+    } else if (!fs::is_directory(destDir)) {
+        std::cerr << "Error: Destination path is not a directory. Checked path: " << destDir << '\n';
+        return;
+    }
+
+    std::string destFilePath = normalizePath(destDir + "/" + filename);
     try {
-        fs::copy(sourceFilePath, destPath, fs::copy_options::overwrite_existing);
-        std::cout << "File copied successfully to " << destPath << '\n';
-    } catch (const std::filesystem::filesystem_error& e) {
-        std::cerr << "Copy failed: " << e.what() << '\n';
+        fs::copy(sourceFilePath, destFilePath, fs::copy_options::overwrite_existing);
+        std::cout << "File copied successfully to: " << destFilePath << '\n';
+    } catch (const fs::filesystem_error& e) {
+        std::cerr << "Error: " << e.what() << '\n';
     }
 }
 
 void moveFile(const std::string& sourceDir) {
-    std::string filename, destPath;
-    std::cout << "Enter the file name to move: ";
+    std::string filename, destDir;
+    std::cout << "Enter the name of the file to move (e.g., example.txt): ";
     std::cin.ignore();
     std::getline(std::cin, filename);
-    std::cout << "Enter the destination directory path: ";
-    std::getline(std::cin, destPath);
+    std::cout << "Enter the full path of the destination directory: ";
+    std::getline(std::cin, destDir);
 
     std::string sourceFilePath = normalizePath(sourceDir + "/" + filename);
-    std::string destFilePath = normalizePath(destPath + "/" + filename);
+    destDir = normalizePath(destDir);
 
     if (!fs::exists(sourceFilePath) || !fs::is_regular_file(sourceFilePath)) {
-        std::cerr << "Source file does not exist.\n";
-        return;
-    }
-    if (!fs::exists(destPath)) {
-        std::cerr << "Destination path is invalid.\n";
+        std::cerr << "Error: Source file does not exist or is not a regular file. Checked path: " << sourceFilePath << '\n';
         return;
     }
 
+    if (!fs::exists(destDir)) {
+        std::cout << "Destination directory does not exist. Creating it...\n";
+        try {
+            fs::create_directories(destDir);
+            std::cout << "Directory created successfully.\n";
+        } catch (const fs::filesystem_error& e) {
+            std::cerr << "Error creating directory: " << e.what() << '\n';
+            return;
+        }
+    } else if (!fs::is_directory(destDir)) {
+        std::cerr << "Error: Destination path is not a directory. Checked path: " << destDir << '\n';
+        return;
+    }
+
+    std::string destFilePath = normalizePath(destDir + "/" + filename);
     try {
         fs::rename(sourceFilePath, destFilePath);
-        std::cout << "File moved successfully to " << destFilePath << '\n';
-    } catch (const std::filesystem::filesystem_error& e) {
-        std::cerr << "Move failed: " << e.what() << '\n';
+        std::cout << "File moved successfully to: " << destFilePath << '\n';
+    } catch (const fs::filesystem_error& e) {
+        std::cerr << "Error: " << e.what() << '\n';
     }
 }
 
-// void viewFile(const std::string& path) {
-//     std::string filename;
-//     std::cout << "Enter the file name to view: ";
-//     std::cin.ignore();
-//     std::getline(std::cin, filename);
-
-//     std::string filePath = normalizePath(path + "/" + filename);
-//     if (!fs::exists(filePath) || !fs::is_regular_file(filePath)) {
-//         std::cerr << "File does not exist or is not a regular file.\n";
-//         return;
-//     }
-
-//     std::ifstream file(filePath);
-//     if (!file.is_open()) {
-//         std::cerr << "Error opening file.\n";
-//         return;
-//     }
-
-//     std::string line;
-//     while (std::getline(file, line)) {
-//         std::cout << line << '\n';
-//     }
-// }
-
 void viewFile(const std::string& path) {
     std::string filename;
-    std::cout << "Enter the file name to view (include extension): ";
+    std::cout << "Enter the name of the file to view (e.g., example.txt): ";
     std::cin.ignore();
     std::getline(std::cin, filename);
 
@@ -201,65 +199,40 @@ void viewFile(const std::string& path) {
     }
 
     if (!fs::is_regular_file(filePath)) {
-        std::cerr << "Error: Path is not a regular file: " << filePath << '\n';
+        std::cerr << "Error: Path is not a regular file. Checked path: " << filePath << '\n';
         return;
     }
 
-    // Check for text file extensions (basic heuristic)
-    std::vector<std::string> textFileExtensions = {".txt", ".csv", ".log", ".json"};
-    std::string extension = fs::path(filePath).extension().string();
-    if (std::find(textFileExtensions.begin(), textFileExtensions.end(), extension) != textFileExtensions.end()) {
-        // Handle text file
-        std::ifstream file(filePath);
-        if (!file.is_open()) {
-            std::cerr << "Error: Could not open the file: " << filePath << '\n';
-            return;
-        }
-
-        std::cout << "Contents of " << filePath << ":\n";
-        std::string line;
-        while (std::getline(file, line)) {
-            std::cout << line << '\n';
-        }
-        file.close();
-    } else {
-        // Handle binary file (e.g., images)
-        std::cout << "The file \"" << filename << "\" is a binary file and cannot be displayed as plain text.\n";
-        std::cout << "To view this file, open it with an image viewer.\n";
+    std::ifstream file(filePath);
+    if (!file.is_open()) {
+        std::cerr << "Error: Could not open file.\n";
+        return;
     }
+
+    std::cout << "Contents of " << filePath << ":\n";
+    std::string line;
+    while (std::getline(file, line)) {
+        std::cout << line << '\n';
+    }
+    file.close();
 }
 
-
-
-
-int main()
-{
+int main() {
     int choice;
 
-    do
-    {
+    do {
         displayMainMenu();
-        while (!(std::cin >> choice))
-        {
+        while (!(std::cin >> choice)) {
             std::cerr << "Invalid input. Please enter a number.\n";
             std::cin.clear();
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         }
 
-        switch (choice)
-        {
-        case 1:
-            openDirectory();
-            break;
-        case 2:
-            createDirectory();
-            break;
-        case 3:
-            std::cout << "Exiting program. Goodbye!\n";
-            break;
-        default:
-            std::cerr << "Invalid action. Returning to Main Menu.\n";
-            break;
+        switch (choice) {
+            case 1: openDirectory(); break;
+            case 2: createDirectory(); break;
+            case 3: std::cout << "Exiting program. Goodbye!\n"; break;
+            default: std::cerr << "Invalid choice. Returning to Main Menu.\n"; break;
         }
     } while (choice != 3);
 
